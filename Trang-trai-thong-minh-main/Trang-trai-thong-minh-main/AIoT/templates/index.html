@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRANG TRẠI THÔNG MINH</title>
+    <link rel="icon" type="image/x-icon" href="https://i.imgur.com/ST4qhSS_d.webp?maxwidth=760&fidelity=grand">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        h2 {
+            color: #007bff;
+        }
+
+        h3 {
+            text-align: center;
+        }
+
+        .video-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .video-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+        }
+
+        .container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+
+        .card {
+            width: 280px;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+
+        .card h3 {
+            margin: 0;
+            color: #007bff;
+        }
+
+        .status {
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .warning {
+            display: none;
+            color: red;
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 10px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h2>📡HỆ THỐNG QUẢN LÝ TRANG TRẠI THÔNG MINH</h2>
+    <div class="video-container">
+        <img src="/video_feed" alt="Video Stream">
+    </div>
+    <div class="container">
+        <div class="card">
+            <h3>UNO 1</h3>
+            <p class="status">⏳ <b>Thời gian:</b> <span id="uno1_time">--:--:--</span></p>
+            <p class="status">💡 <b>LDR:</b> <span id="uno1_ldr">Đang chờ...</span></p>
+            <p class="status">🔦 <b>LED:</b> <span id="uno1_led">Đang chờ...</span></p>
+            <p class="status">⚙️ <b>Động cơ bước:</b> <span id="uno1_motor">Đang chờ...</span></p>
+        </div>
+        <div class="card">
+            <h3>UNO 2</h3>
+            <p class="status">🌡️ <b>Nhiệt độ:</b> <span id="uno2_temp">Đang chờ...</span>°C</p>
+            <p class="status">💧 <b>Độ ẩm:</b> <span id="uno2_hum">Đang chờ...</span>%</p>
+            <p class="status">📏 <b>Mực nước:</b> <span id="uno2_water">Đang chờ...</span></p>
+            <p class="status">🔄 <b>Máy bơm:</b> <span id="uno2_status">Đang chờ...</span></p>
+        </div>
+        <div class="card">
+            <h3>UNO 3</h3>
+            <p class="status">💨 <b>Nồng độ khí:</b> <span id="uno3_gas">Đang chờ...</span></p>
+            <p class="warning" id="gas_warning">⚠️ CẢNH BÁO: Nồng độ khí vượt ngưỡng!</p>
+        </div>
+    </div>
+
+    <h2>⚙️ Điều Khiển</h2>
+    <button onclick="toggleDevice('motor')">🔄 Bật/Tắt Động Cơ Bước</button>
+    <button onclick="toggleDevice('pump')">💦 Bật/Tắt Máy Bơm</button>
+    <button onclick="toggleDevice('pump')">💡 Bật/Tắt Đèn LED</button>
+
+    <script>
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        socket.on('sensor_update', function (data) {
+            console.log("📡 Cập nhật dữ liệu:", data);
+
+            // Xử lý dữ liệu từ UNO 1
+            if (data.uno1) {
+                let parts = data.uno1.match(/(\d{2}:\d{2}:\d{2})\|LDR:(\d+)\|LED:(\d)\|M:(\d)/);
+                if (parts) {
+                    document.getElementById('uno1_time').innerText = parts[1]; // Thời gian
+                    document.getElementById('uno1_ldr').innerText = parts[2]; // LDR
+                    document.getElementById('uno1_led').innerText = parts[3] === "0" ? "Tắt" : "Bật"; // LED
+                    document.getElementById('uno1_motor').innerText = parts[4] === "0" ? "Tắt" : "Bật"; // Động cơ
+                } else {
+                    document.getElementById('uno1_time').innerText = "Chưa có dữ liệu";
+                    document.getElementById('uno1_ldr').innerText = "Chưa có dữ liệu";
+                    document.getElementById('uno1_led').innerText = "Chưa có dữ liệu";
+                    document.getElementById('uno1_motor').innerText = "Chưa có dữ liệu";
+                    console.warn("⚠️ Dữ liệu UNO 1 không đúng định dạng:", data.uno1);
+                }
+            }
+
+            // Xử lý dữ liệu từ UNO 2 (giữ nguyên)
+            if (data.uno2) {
+                let values = data.uno2.split(',');
+                if (values.length >= 4) {
+                    document.getElementById('uno2_temp').innerText = values[0];
+                    document.getElementById('uno2_hum').innerText = values[1];
+                    document.getElementById('uno2_water').innerText = values[2];
+                    document.getElementById('uno2_status').innerText = values[3] === "1" ? "Hoạt động" : "Tắt";
+                }
+            }
+
+            // Xử lý dữ liệu từ UNO 3 (giữ nguyên)
+            if (data.uno3) {
+                let gasMatch = data.uno3.match(/Gas:(\d+)/);
+                if (gasMatch) {
+                    let gasValue = parseInt(gasMatch[1]);
+                    document.getElementById('uno3_gas').innerText = gasValue;
+                    if (gasValue > 150) {
+                        document.getElementById('gas_warning').style.display = 'block';
+                    } else {
+                        document.getElementById('gas_warning').style.display = 'none';
+                    }
+                } else {
+                    document.getElementById('uno3_gas').innerText = "Không có dữ liệu";
+                    document.getElementById('gas_warning').style.display = 'none';
+                }
+            }
+        });
+
+        // Hàm toggleDevice (giữ nguyên)
+        function toggleDevice(device) {
+            let currentStatus = (device === 'motor' && document.getElementById('uno1_motor').innerText === 'Bật') ||
+                (device === 'pump' && document.getElementById('uno2_status').innerText === 'Hoạt động') ? 1 : 0;
+            let newStatus = currentStatus === 1 ? 0 : 1;
+            $.post('/control', JSON.stringify({ device: device, status: newStatus }),
+                function (response) { console.log(response); },
+                "json"
+            );
+        }
+    </script>
+</body>
+
+</html>
